@@ -25,6 +25,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "f6351a63-632a-4544-88b3-3662c0408cb8"
+      }
+    },
+    "owner": "darkmatter08"
   }
 }
