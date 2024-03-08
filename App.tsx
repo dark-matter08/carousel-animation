@@ -1,4 +1,4 @@
-import * as React from 'react';
+import { useRef } from 'react';
 import {
   FlatList,
   Image,
@@ -86,7 +86,8 @@ const Content = ({ item }) => {
   );
 };
 
-export default () => {
+export default function App() {
+  const scrollX = useRef(new Animated.Value(0)).current;
   return (
     <View style={{ backgroundColor: '#A5F1FA', flex: 1 }}>
       <StatusBar hidden />
@@ -96,13 +97,17 @@ export default () => {
           justifyContent: 'center',
         }}>
         <View style={{ height: IMAGE_HEIGHT * 2.1 }}>
-          <FlatList
+          <Animated.FlatList
             data={DATA}
             keyExtractor={(item) => item.key}
             horizontal
             pagingEnabled
             bounces={false}
             style={{ flexGrow: 0 }}
+            onScroll={Animated.event(
+              [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+              { useNativeDriver: true }
+            )}
             contentContainerStyle={{
               height: IMAGE_HEIGHT + SPACING * 2,
               paddingHorizontal: SPACING * 2,
@@ -182,4 +187,4 @@ export default () => {
       </SafeAreaView>
     </View>
   );
-};
+}
