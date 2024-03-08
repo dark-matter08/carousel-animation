@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import {
   FlatList,
   Image,
@@ -88,6 +88,10 @@ const Content = ({ item }) => {
 
 export default function App() {
   const scrollX = useRef(new Animated.Value(0)).current;
+  const progress = Animated.modulo(Animated.divide(scrollX, width), width);
+  const [index, setIndex] = useState(0);
+  const ref = useRef<any>();
+
   return (
     <View style={{ backgroundColor: '#A5F1FA', flex: 1 }}>
       <StatusBar hidden />
@@ -98,12 +102,13 @@ export default function App() {
         }}>
         <View style={{ height: IMAGE_HEIGHT * 2.1 }}>
           <Animated.FlatList
+            ref={ref}
             data={DATA}
             keyExtractor={(item) => item.key}
             horizontal
             pagingEnabled
             bounces={false}
-            style={{ flexGrow: 0 }}
+            style={{ flexGrow: 0, zIndex: 9999 }}
             onScroll={Animated.event(
               [{ nativeEvent: { contentOffset: { x: scrollX } } }],
               { useNativeDriver: true }
@@ -112,13 +117,31 @@ export default function App() {
               height: IMAGE_HEIGHT + SPACING * 2,
               paddingHorizontal: SPACING * 2,
             }}
+            onMomentumScrollEnd={(e) => {
+              setIndex(Math.floor(e.nativeEvent.contentOffset.x / width));
+            }}
             showsHorizontalScrollIndicator={false}
             renderItem={({ item, index }) => {
+              const inputRange = [
+                (index - 1) * width,
+                index * width,
+                (index + 1) * width,
+              ];
+              const opacity = scrollX.interpolate({
+                inputRange,
+                outputRange: [0, 1, 0],
+              });
+              const translateY = scrollX.interpolate({
+                inputRange,
+                outputRange: [50, 0, 20],
+              });
               return (
-                <View
+                <Animated.View
                   style={{
                     width,
+                    opacity,
                     paddingVertical: SPACING,
+                    transform: [{ translateY }],
                   }}>
                   <Image
                     source={{ uri: item.image }}
@@ -128,7 +151,7 @@ export default function App() {
                       resizeMode: 'cover',
                     }}
                   />
-                </View>
+                </Animated.View>
               );
             }}
           />
@@ -138,10 +161,37 @@ export default function App() {
               alignItems: 'center',
               paddingHorizontal: SPACING * 2,
               marginLeft: SPACING * 2,
+              zIndex: 9999,
             }}>
-            <Content item={DATA[0]} />
+            {DATA.map((item, index) => {
+              const inputRange = [
+                (index - 0.2) * width,
+                index * width,
+                (index + 0.2) * width,
+              ];
+
+              const opacity = scrollX.interpolate({
+                inputRange,
+                outputRange: [0, 1, 0],
+              });
+              const rotateY = scrollX.interpolate({
+                inputRange,
+                outputRange: ['45deg', '0deg', '45deg'],
+              });
+              return (
+                <Animated.View
+                  key={item.key}
+                  style={{
+                    position: 'absolute',
+                    opacity,
+                    transform: [{ perspective: IMAGE_WIDTH * 4 }, { rotateY }],
+                  }}>
+                  <Content item={item} />
+                </Animated.View>
+              );
+            })}
           </View>
-          <View
+          <Animated.View
             style={
               {
                 width: IMAGE_WIDTH + SPACING * 2,
@@ -159,6 +209,17 @@ export default function App() {
                   width: 0,
                   height: 0,
                 },
+                transform: [
+                  {
+                    perspective: IMAGE_WIDTH * 4,
+                  },
+                  {
+                    rotateY: progress.interpolate({
+                      inputRange: [0, 0.5, 1],
+                      outputRange: ['0deg', '90deg', '180deg'],
+                    }),
+                  },
+                ],
               } as any
             }
           />
@@ -171,13 +232,27 @@ export default function App() {
             paddingHorizontal: SPACING,
             paddingVertical: SPACING,
           }}>
-          <TouchableOpacity onPress={() => {}}>
+          <TouchableOpacity
+            disabled={index === 0}
+            style={{ opacity: index === 0 ? 0.2 : 1 }}
+            onPress={() => {
+              ref?.current?.scrollToOffset({
+                offset: (index - 1) * width,
+              });
+            }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <AntDesign name="swapleft" size={42} color="black" />
               <Text style={{ fontSize: 12, fontWeight: '800' }}>PREV</Text>
             </View>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => {}}>
+          <TouchableOpacity
+            disabled={index === DATA.length - 1}
+            style={{ opacity: index === DATA.length - 1 ? 0.2 : 1 }}
+            onPress={() => {
+              ref?.current?.scrollToOffset({
+                offset: (index + 1) * width,
+              });
+            }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <Text style={{ fontSize: 12, fontWeight: '800' }}>NEXT</Text>
               <AntDesign name="swapright" size={42} color="black" />
